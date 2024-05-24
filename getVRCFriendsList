@@ -6,15 +6,15 @@ import os
 BASE_URL = "https://api.vrchat.cloud/api/1"
 APIKEY = "JlE5Jldo5Jibnk5O5hTx6XVqsJu4WJ26"
 
+baseURL = "https://api.vrchat.cloud/api/1/"
+
 # .envファイルを読み込む
 load_dotenv()
 
+# VCRhatのAuthCookieｗ取得する。
 def get_vrchat_authcookie():
     # .envファイルを読み込む
 
-
-    # ログインエンドポイントのURL
-    login_url = f"{BASE_URL}/auth/user"
 
     # ユーザー名とパスワードをURLエンコードする
     username = quote(os.getenv('VRCHAT_USERNAME').encode('utf-8'))
@@ -30,7 +30,7 @@ def get_vrchat_authcookie():
 
     try:
         # リクエスト送信
-        response = requests.get('https://api.vrchat.cloud/api/1/auth/user',
+        response = requests.get(f"{baseURL}auth/user",
                                 data=data,
                                 headers=headers,
                                 auth=(username,password))
@@ -51,10 +51,25 @@ def get_vrchat_authcookie():
         print(f"リクエストエラー: {e}")
         return None
 
+# 2段階認証を行う。
+def f2a(cookie:str):
+    f2acode = input("f2acode: ")
+
+    headers = {
+        "User-Agent": "VRCX"
+    }
+
+    r = requests.post(f"{baseURL}auth/twofactorauth/emailotp/verify",
+                      headers=headers,
+                      cookies={"auth": cookie},
+                      json={"code": f2acode})
+    print("f2a", r)
+
 #メイン関数
 if __name__ == "__main__":
     authcookie = get_vrchat_authcookie()
     if authcookie:
         print(f"authcookie: {authcookie}")
+        f2a(authcookie)
     else:
         print("authcookieの取得に失敗しました")
