@@ -2,16 +2,17 @@ import requests
 from urllib.parse import quote
 from dotenv import load_dotenv
 import os
+import pickle
 
 BASE_URL = "https://api.vrchat.cloud/api/1"
 APIKEY = "JlE5Jldo5Jibnk5O5hTx6XVqsJu4WJ26"
-
 baseURL = "https://api.vrchat.cloud/api/1/"
+COOKIE_FILE = "authcookie.pickle"
 
 # .envファイルを読み込む
 load_dotenv()
 
-# VCRhatのAuthCookieｗ取得する。
+# VRChatのAuthCookieを取得する。
 def get_vrchat_authcookie():
     # .envファイルを読み込む
 
@@ -30,10 +31,7 @@ def get_vrchat_authcookie():
 
     try:
         # リクエスト送信
-        res = requests.get(f"{baseURL}auth/user",
-                                data=data,
-                                headers=headers,
-                                auth=(username,password))
+        res = requests.get(f"{baseURL}auth/user", data=data, headers=headers, auth=(username,password))
         print(res)
 
         res.raise_for_status()  # エラーがある場合は例外を発生させる
@@ -58,15 +56,13 @@ def f2a(cookie:str):
     headers = {
         "User-Agent": "VRCX"
     }
-
-    res = requests.post(f"{baseURL}auth/twofactorauth/emailotp/verify",
-                      headers=headers,
-                      cookies={"auth": cookie},
-                      json={"code": f2acode})
+    print('□' + cookie)
+    res = requests.post(f"{baseURL}auth/twofactorauth/emailotp/verify", headers=headers, cookies={"auth": cookie}, json={"code": f2acode})
     print("f2a", res)
 
 # フレンドリストの取得
 def getFriendsList(authcookie):
+    print('☆' + authcookie)
     res = send(authcookie)
 
     # HTTPステータスコードが401の場合は2段階認証を行う
@@ -80,16 +76,25 @@ def send(authcookie):
     headers = {
         "User-Agent": "VRCX"
     }
-    res = requests.get(f"{baseURL}auth/user/friends?offline=true",
-                        headers=headers,
-                        cookies={"auth": authcookie})
-    print("friends", res)
-
+    print('〇' + authcookie)
+    res = requests.get(f"{baseURL}auth/user/friends?offline=true", headers=headers, cookies={"auth": authcookie})
+    print(f"Response status code: {res.status_code}")
+    print(f"Response content: {res.content}")
     return res
 
 #メイン関数
 if __name__ == "__main__":
-    authcookie = get_vrchat_authcookie()
+    # 保存されたクッキーを読み込む
+    if os.path.exists(COOKIE_FILE):
+        with open(COOKIE_FILE, 'rb') as f:
+            authcookie = pickle.load(f)
+    else:
+        # クッキーが保存されていない場合は新しく取得
+        authcookie = get_vrchat_authcookie()
+        # 取得したクッキーを保存
+        with open(COOKIE_FILE, 'wb') as f:
+            pickle.dump(authcookie, f)
+
     if authcookie:
         print(f"authcookie: {authcookie}")
         ret = getFriendsList(authcookie)
