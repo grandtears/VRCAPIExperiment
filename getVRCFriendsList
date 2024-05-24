@@ -1,0 +1,60 @@
+import requests
+from urllib.parse import quote
+from dotenv import load_dotenv
+import os
+
+BASE_URL = "https://api.vrchat.cloud/api/1"
+APIKEY = "JlE5Jldo5Jibnk5O5hTx6XVqsJu4WJ26"
+
+# .envファイルを読み込む
+load_dotenv()
+
+def get_vrchat_authcookie():
+    # .envファイルを読み込む
+
+
+    # ログインエンドポイントのURL
+    login_url = f"{BASE_URL}/auth/user"
+
+    # ユーザー名とパスワードをURLエンコードする
+    username = quote(os.getenv('VRCHAT_USERNAME').encode('utf-8'))
+    password = quote(os.getenv('VRCHAT_PASSWORD').encode('utf-8'))
+
+    data = {
+        "apiKey": APIKEY
+    }
+
+    headers = {
+        "User-Agent": "VRCX"
+    }
+
+    try:
+        # リクエスト送信
+        response = requests.get('https://api.vrchat.cloud/api/1/auth/user',
+                                data=data,
+                                headers=headers,
+                                auth=(username,password))
+        print(response)
+
+        response.raise_for_status()  # エラーがある場合は例外を発生させる
+
+        # レスポンスからauthcookieを取得
+        authcookie = response.cookies.get('auth')
+
+        if authcookie:
+            return authcookie
+        else:
+            print("authcookieの取得に失敗しました")
+            return None
+
+    except requests.exceptions.RequestException as e:
+        print(f"リクエストエラー: {e}")
+        return None
+
+#メイン関数
+if __name__ == "__main__":
+    authcookie = get_vrchat_authcookie()
+    if authcookie:
+        print(f"authcookie: {authcookie}")
+    else:
+        print("authcookieの取得に失敗しました")
