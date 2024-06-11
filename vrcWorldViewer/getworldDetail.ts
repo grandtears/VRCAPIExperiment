@@ -1,6 +1,7 @@
 const axios = require('axios');
 
-const worldId = 'wrld_f5f8b3dc-6f33-4b34-97f3-83add2fb224d';
+//const worldId = 'wrld_f5f8b3dc-6f33-4b34-97f3-83add2fb224d';
+const worldId = 'wrld_175f8d7d-fd44-476a-8242-8aaef5ba5b33';
 
 axios.get(`https://vrchat.com/api/1/worlds/${worldId}`, {
   headers: {
@@ -18,7 +19,8 @@ axios.get(`https://vrchat.com/api/1/worlds/${worldId}`, {
       imageUrl: worldData.imageUrl,
       capacity: worldData.capacity,
       visits: worldData.visits,
-      favorites: worldData.favorites
+      favorites: worldData.favorites,
+      Tags: worldData.tags
     };
 
     console.log('World information:');
