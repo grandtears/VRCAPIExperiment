@@ -20,7 +20,7 @@ const WorldInfoComponent: React.FC = () => {
     const fetchWorldInfo = async () => {
       try {
         const worldId = 'wrld_175f8d7d-fd44-476a-8242-8aaef5ba5b33';
-        const response = await axios.get(`https://vrchat.com/api/1/worlds/${worldId}`, {
+        const response = await axios.get(`/api/1/worlds/${worldId}`, {
           headers: {
             'User-Agent': 'Mozilla/5.0',
           },

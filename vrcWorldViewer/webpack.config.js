@@ -27,5 +27,11 @@ module.exports = {
     },
     compress: true,
     port: 3000,
+    proxy: {
+      '/api': {
+        target: 'https://vrchat.com',
+        changeOrigin: true,
+      }
+    }
   }
 };
