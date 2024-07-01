@@ -1,5 +1,8 @@
+// WorldInfoComponent.tsx
 import React, { useEffect, useState } from 'react';
-import axios from 'axios';
+import '../css/worldViewer.css';
+import { fetchWorldInfo } from '../ts/getWorldInfo';
+import { useNavigate } from 'react-router-dom';
 
 interface WorldInfo {
   name: string;
@@ -13,62 +16,65 @@ interface WorldInfo {
 }
 
 const WorldInfoComponent: React.FC = () => {
-  const [worldInfo, setWorldInfo] = useState<WorldInfo | null>(null);
+  const navigate = useNavigate();
+  const [worldInfoList, setWorldInfoList] = useState<WorldInfo[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const [worldIdInput, setWorldIdInput] = useState<string>('');
 
   useEffect(() => {
-    const fetchWorldInfo = async () => {
+    const fetchDefaultWorld = async () => {
       try {
-        const worldId = 'wrld_175f8d7d-fd44-476a-8242-8aaef5ba5b33';
-        const response = await axios.get(`/api/1/worlds/${worldId}`, {
-          headers: {
-            'User-Agent': 'Mozilla/5.0',
-          },
-        });
-
-        const worldData = response.data;
-        const extractedInfo: WorldInfo = {
-          name: worldData.name,
-          authorName: worldData.authorName,
-          description: worldData.description,
-          imageUrl: worldData.imageUrl,
-          capacity: worldData.capacity,
-          visits: worldData.visits,
-          favorites: worldData.favorites,
-          Tags: worldData.tags,
-        };
-
-        setWorldInfo(extractedInfo);
+        const defaultWorldId = 'wrld_175f8d7d-fd44-476a-8242-8aaef5ba5b33';
+        const worldInfo = await fetchWorldInfo(defaultWorldId);
+        setWorldInfoList([worldInfo]);
       } catch (error) {
-        if (axios.isAxiosError(error) && error.response) {
-          setError(`Error retrieving world information: ${error.response.status} ${error.response.statusText}`);
-        } else {
-          setError('Error retrieving world information');
-        }
+        setError('Error retrieving default world information');
       }
     };
 
-    fetchWorldInfo();
+    fetchDefaultWorld();
   }, []);
 
-  if (error) {
-    return <div>Error: {error}</div>;
-  }
+  const handleAddWorld = async () => {
+    try {
+      const worldInfo = await fetchWorldInfo(worldIdInput);
+      setWorldInfoList([...worldInfoList, worldInfo]);
+      setWorldIdInput('');
+    } catch (error) {
+      setError('Error retrieving world information');
+    }
+  };
 
-  if (!worldInfo) {
-    return <div>Loading...</div>;
-  }
+  const handleViewLogs = () => {
+    navigate('/worldLogs');
+  };
 
   return (
     <div>
-      <h1>{worldInfo.name}</h1>
-      <p>Author: {worldInfo.authorName}</p>
-      <p>Description: {worldInfo.description}</p>
-      <img src={worldInfo.imageUrl} alt={worldInfo.name} />
-      <p>Capacity: {worldInfo.capacity}</p>
-      <p>Visits: {worldInfo.visits}</p>
-      <p>Favorites: {worldInfo.favorites}</p>
-      <p>Tags: {worldInfo.Tags.join(', ')}</p>
+      <div>
+        <input
+          type="text"
+          value={worldIdInput}
+          onChange={(e) => setWorldIdInput(e.target.value)}
+          placeholder="Enter World ID"
+        />
+        <button onClick={handleAddWorld}>Add World</button>
+        <button onClick={handleViewLogs}>View World Logs</button>
+      </div>
+      {error && <div>Error: {error}</div>}
+      {worldInfoList.map((worldInfo, index) => (
+        <div key={index}>
+          <h2>{worldInfo.name}</h2>
+          <p>Author: {worldInfo.authorName}</p>
+          <p>Description: {worldInfo.description}</p>
+          <img src={worldInfo.imageUrl} alt={worldInfo.name} className="world-info-image" />
+          <p>Capacity: {worldInfo.capacity}</p>
+          <p>Visits: {worldInfo.visits}</p>
+          <p>Favorites: {worldInfo.favorites}</p>
+          <p>Tags: {worldInfo.Tags.join(', ')}</p>
+          <hr />
+        </div>
+      ))}
     </div>
   );
 };

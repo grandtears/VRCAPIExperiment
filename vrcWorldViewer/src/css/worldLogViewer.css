@@ -1,0 +1,48 @@
+/* worldLogViewer.css */
+
+.world-log-viewer {
+    padding: 20px;
+}
+
+.two-column-layout {
+    display: flex;
+    gap: 20px;
+}
+
+.left-column {
+    flex: 1;
+    overflow-y: auto;
+    max-height: 80vh;
+}
+
+.right-column {
+    flex: 1;
+    position: sticky;
+    top: 20px;
+}
+
+.world-info-image {
+    width: 25%;
+    height: auto;
+    display: block;
+    margin: 10px 0;
+    border-radius: 5px;
+  }
+  
+
+ul {
+    list-style-type: none;
+    padding: 0;
+}
+
+li {
+    margin-bottom: 10px;
+}
+
+button {
+    margin-left: 10px;
+}
+
+.error {
+    color: red;
+}

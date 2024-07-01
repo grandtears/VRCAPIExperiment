@@ -1,13 +1,14 @@
-import React, { Component } from 'react';
+// index.tsx または index.js
+import React from 'react';
 import ReactDOM from 'react-dom';
-import WorldInfoComponent from './component/worldViewer';
+import { BrowserRouter as Router } from 'react-router-dom';
+import App from '../App';
 
-const App = () => {
-  return(
-    <div>
-      <h1>VRChat World Viewer</h1>
-      <WorldInfoComponent />
-    </div>
-  )
-}
-ReactDOM.render(<App />, document.getElementById('root'));
+ReactDOM.render(
+  <React.StrictMode>
+    <Router>
+      <App />
+    </Router>
+  </React.StrictMode>,
+  document.getElementById('root')
+);

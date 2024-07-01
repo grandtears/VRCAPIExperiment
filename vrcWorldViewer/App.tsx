@@ -1,11 +1,14 @@
-import React, { Component } from 'react';
+import React from 'react';
+import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
+import WorldInfoComponent from './src/component/worldViewer';
+import WorldLogViewer from './src/component/worldLogViewer'; // この新しいコンポーネントを作成する必要があります
 
 const App: React.FC = () => {
   return (
-    <div>
-      <h1>VRChat World Viewer</h1>
-      {/* Your components and logic will go here */}
-    </div>
+      <Routes>
+        <Route path="/" element={<WorldInfoComponent />} />
+        <Route path="/worldLogs" element={<WorldLogViewer />} />
+      </Routes>
   );
 };
 
