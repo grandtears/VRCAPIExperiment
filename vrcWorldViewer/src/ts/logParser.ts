@@ -3,6 +3,7 @@ export interface WorldEntry {
   worldName: string;
   worldId: string;
   instanceId: string;
+  instanceType: string;
   users: string[];
   visitTime: string;
 }
@@ -11,7 +12,7 @@ export function parseLogFiles(files: File[]): Promise<WorldEntry[]> {
   return Promise.all(files.map(readFile))
     .then(contents => {
       const entries = contents.flatMap(parseLogContent);
-      console.log("Final parsed entries:", entries); // entriesをそのまま出力
+      console.log("Final parsed entries:", entries);
       return entries;
     });
 }
@@ -37,56 +38,62 @@ function parseLogContent(content: string): WorldEntry[] {
       worldName: '',
       worldId: '',
       instanceId: '',
+      instanceType: '',
       visitTime: '',
     };
   }
 
   function addCurrentEntry(joinUsers: Set<string>) {
     if (currentEntry.date && currentEntry.worldId && currentEntry.worldName) {
-      entries.push({ ...currentEntry, users: Array.from(joinUsers) }); // スプレッド構文でコピー
-      console.log("Adding entry:", JSON.stringify(currentEntry, null, 2)); // currentEntryをそのまま出力
+      entries.push({ ...currentEntry, users: Array.from(joinUsers) });
+      console.log("Adding entry:", JSON.stringify(currentEntry, null, 2));
     }
 
-    // 新しいcurrentEntryを作成する際に、前のcurrentEntryのusersを引き継ぐ
     currentEntry = {
-      ...createNewEntry(),  // 新しいcurrentEntryを作成
-      users: currentEntry.users, // 直前のcurrentEntryのusersをセット
+      ...createNewEntry(),
+      users: currentEntry.users,
     };
   }
-  let seflJoniFlg:boolean = false;
+
+  function determineInstanceType(instanceId: string): string {
+    if (instanceId.includes('~hidden')) return 'FRIEND_PLUS';
+    if (instanceId.includes('~friends')) return 'FRIEND';
+    if (instanceId.includes('~private') && instanceId.includes('~canRequestInvite')) return 'INVITE_PLUS';
+    if (instanceId.includes('~private') && !instanceId.includes('~canRequestInvite')) return 'INVITE';
+    if (instanceId.includes('~group') && instanceId.includes('~groupAccessType(members)')) return 'GROUP';
+    if (instanceId.includes('~group') && instanceId.includes('~groupAccessType(plus)')) return 'GROUP_PLUS';
+    if (instanceId.includes('~group') && instanceId.includes('~groupAccessType(public)')) return 'GROUP_PUBLIC';
+    return 'PUBLIC';
+  }
+
+  let selfJoinFlag: boolean = false;
   let joinDate = '';
   let joinUsers = new Set<string>();
   lines.forEach(line => {
     const dateMatch = line.match(/^(\d{4}\.\d{2}\.\d{2} \d{2}:\d{2}:\d{2})/);
     const EnteringWorldMatch = line.match(/^(\d{4}\.\d{2}\.\d{2} \d{2}:\d{2}:\d{2}) Log\s+-\s+\[Behaviour\] Entering Room: (.*)$/);
-    const joiningWorldMatch = line.match(/Joining (wrld_[^:]+):([^~]+)/);
+    const joiningWorldMatch = line.match(/Joining (wrld_[^:]+):([^~]+)(.*)/);
     const userJoinMatch = line.match(/OnPlayerJoined (.+)/);
     const userLeaveMatch = line.match(/OnPlayerLeft (.+)/);
     const userLeftRoomMatch = line.match(/^(\d{4}\.\d{2}\.\d{2} \d{2}:\d{2}:\d{2}) Log\s+-\s+\[Behaviour\] OnLeftRoom$/);
 
-     // 日付を初期化する
-/*     if (dateMatch) {
-      const newDate = dateMatch[1];
-      joinDate = newDate; // 日付を設定する
-    } */
-    
-    // ワールドのJOIN情報した際に新規エントリーを追加
-    if (EnteringWorldMatch && !seflJoniFlg) {
+    if (EnteringWorldMatch && !selfJoinFlag) {
       const newDate = EnteringWorldMatch[1];
       joinDate = newDate;
       currentEntry.worldName = EnteringWorldMatch[2].trim();
       console.log("Found world name:", currentEntry.worldName);
-      seflJoniFlg = true;
+      selfJoinFlag = true;
     }
     if (joiningWorldMatch) {
       currentEntry.worldId = joiningWorldMatch[1];
-      currentEntry.instanceId = joiningWorldMatch[2];
+      currentEntry.instanceId = joiningWorldMatch[2] + (joiningWorldMatch[3] || '');
       currentEntry.date = joinDate;
-      console.log("Found world ID:", currentEntry.worldId, "Instance ID:", currentEntry.instanceId);
+      currentEntry.instanceType = determineInstanceType(currentEntry.instanceId);
+      console.log("Found world ID:", currentEntry.worldId, "Instance ID:", currentEntry.instanceId, "Instance Type:", currentEntry.instanceType);
       console.log("Found date:", currentEntry.date);
     }
 
-    if(seflJoniFlg){
+    if (selfJoinFlag) {
       if (userJoinMatch) {
         const user = userJoinMatch[1];
         joinUsers.add(user);
@@ -98,15 +105,13 @@ function parseLogContent(content: string): WorldEntry[] {
         console.log("User left:", user, "Current unique users:", currentEntry.users);
       }
     }
-    if (userLeftRoomMatch && seflJoniFlg) {
+    if (userLeftRoomMatch && selfJoinFlag) {
       console.log("User left room" + currentEntry.worldName);
       const leftRoomDate = userLeftRoomMatch[1];
       console.log("left Time" + leftRoomDate);
 
-      // joinDate ～ leftRoomDate までの時間を計算
-      // 日付と時刻の形式を変換
-      const formattedLeftRoomDate = leftRoomDate.replace(/\./g, '-'); // . を - に置換
-      const formattedJoinDate = joinDate.replace(/\./g, '-'); // . を - に置換
+      const formattedLeftRoomDate = leftRoomDate.replace(/\./g, '-');
+      const formattedJoinDate = joinDate.replace(/\./g, '-');
 
       const startTime = new Date(formattedJoinDate);
       const endTime = new Date(formattedLeftRoomDate);
@@ -114,16 +119,14 @@ function parseLogContent(content: string): WorldEntry[] {
       const diffHour = Math.floor(diffTime / (1000 * 60 * 60));
       const diffMin = Math.floor(diffTime % (1000 * 60 * 60) / (1000 * 60));
 
-      currentEntry.date = leftRoomDate; // currentEntryの日付を更新
-      currentEntry.visitTime = diffHour + "時間" + diffMin + "分"; // 滞在時間を追加
+      currentEntry.date = leftRoomDate;
+      currentEntry.visitTime = diffHour + "時間" + diffMin + "分";
       console.log("Visit Time:", currentEntry.visitTime);
       console.log("Join Users:", joinUsers);
       addCurrentEntry(joinUsers);
-      seflJoniFlg = false;
-      // joinUsersを初期化
+      selfJoinFlag = false;
       joinUsers = new Set<string>();
     }
-
   });
 
   return entries;

@@ -100,6 +100,7 @@ const WorldLogViewer: React.FC = () => {
                         Time: {entry.date.split(' ')[1]}, 
                         World: {entry.worldName || 'Unknown'} 
                         VisitTime : {entry.visitTime}
+                        InstanceType : {entry.instanceType}
                         <button onClick={() => handleShowDetail(entry)}>Show Detail</button>
                       </li>
                     ))}
