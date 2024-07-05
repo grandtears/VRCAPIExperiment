@@ -1,3 +1,6 @@
+import { determineInstanceType, InstanceType } from './instanceTypeUtils';
+import { calculateVisitTime, formatDate } from './timeUtils';
+
 export interface WorldEntry {
   date: string;
   worldName: string;
@@ -55,17 +58,6 @@ function parseLogContent(content: string): WorldEntry[] {
     };
   }
 
-  function determineInstanceType(instanceId: string): string {
-    if (instanceId.includes('~hidden')) return 'FRIEND_PLUS';
-    if (instanceId.includes('~friends')) return 'FRIEND';
-    if (instanceId.includes('~private') && instanceId.includes('~canRequestInvite')) return 'INVITE_PLUS';
-    if (instanceId.includes('~private') && !instanceId.includes('~canRequestInvite')) return 'INVITE';
-    if (instanceId.includes('~group') && instanceId.includes('~groupAccessType(members)')) return 'GROUP';
-    if (instanceId.includes('~group') && instanceId.includes('~groupAccessType(plus)')) return 'GROUP_PLUS';
-    if (instanceId.includes('~group') && instanceId.includes('~groupAccessType(public)')) return 'GROUP_PUBLIC';
-    return 'PUBLIC';
-  }
-
   let selfJoinFlag: boolean = false;
   let joinDate = '';
   let joinUsers = new Set<string>();
@@ -110,17 +102,8 @@ function parseLogContent(content: string): WorldEntry[] {
       const leftRoomDate = userLeftRoomMatch[1];
       console.log("left Time" + leftRoomDate);
 
-      const formattedLeftRoomDate = leftRoomDate.replace(/\./g, '-');
-      const formattedJoinDate = joinDate.replace(/\./g, '-');
-
-      const startTime = new Date(formattedJoinDate);
-      const endTime = new Date(formattedLeftRoomDate);
-      const diffTime = endTime.getTime() - startTime.getTime();
-      const diffHour = Math.floor(diffTime / (1000 * 60 * 60));
-      const diffMin = Math.floor(diffTime % (1000 * 60 * 60) / (1000 * 60));
-
-      currentEntry.date = leftRoomDate;
-      currentEntry.visitTime = diffHour + "時間" + diffMin + "分";
+      currentEntry.date = joinDate;
+      currentEntry.visitTime = calculateVisitTime(joinDate, leftRoomDate);
       console.log("Visit Time:", currentEntry.visitTime);
       console.log("Join Users:", joinUsers);
       addCurrentEntry(joinUsers);
